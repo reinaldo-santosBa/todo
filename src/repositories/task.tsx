@@ -1,4 +1,5 @@
-import * as SQLite from 'expo-sqlite';
+import reactotron from '../config/reactotron';
+import { db } from './db';
 interface task {
     id: string;
     desc: string;
@@ -6,7 +7,6 @@ interface task {
     synchronized: number;
 }
 
-const db = SQLite.openDatabase('bd.db');
 
 const initdatabase = (): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -22,11 +22,11 @@ const initdatabase = (): Promise<void> => {
         `,
                 [],
                 () => {
-                    console.log('Tabela criada com sucesso');
+                    reactotron.log!!('Tabela criada com sucesso');
                     resolve();
                 },
                 (error) => {
-                    console.error('Erro ao criar a tabela:', error);
+                    reactotron.error!!('Erro ao criar a tabela:', error);
                     reject(error);
                     return true;
                 }
@@ -42,11 +42,11 @@ const dropBase = (): Promise<void> => {
                 `DROP TABLE TASKS `,
                 [],
                 () => {
-                    console.log('Tabela dropada com sucesso');
+                    reactotron.log!!('Tabela dropada com sucesso');
                     resolve();
                 },
                 (error) => {
-                    console.error('Erro ao dropada a tabela:', error);
+                    reactotron.error!!('Erro ao dropada a tabela:', error);
                     reject(error);
                     return true;
                 }
@@ -55,18 +55,18 @@ const dropBase = (): Promise<void> => {
     });
 };
 
-const insert = ({ desc, id,synchronized }: task): Promise<void> => {
+const insert = ({ desc, id, synchronized }: task): Promise<void> => {
     return new Promise<void>((resolve, reject) => {
         db.transaction((tx) => {
             tx.executeSql(
                 'INSERT INTO TASKS (id,desc,synchronized) VALUES (?,?,?)',
-                [id, desc,synchronized],
+                [id, desc, synchronized],
                 (_, result) => {
-                    console.log('Tarefa inserida com sucesso', result);
+                    reactotron.log!!('Tarefa inserida com sucesso', result);
                     resolve();
                 },
                 (error) => {
-                    console.error('Erro ao inserir tasks:', error);
+                    reactotron.error!!('Erro ao inserir tasks:', error);
                     reject(error);
                     return true;
                 }
@@ -88,11 +88,11 @@ const remove = (id: string): Promise<void> => {
                 `,
                 [id],
                 (_, result) => {
-                    console.log('Tarefa removida com sucesso', result);
+                    reactotron.log!!('Tarefa removida com sucesso', result);
                     resolve();
                 },
                 (error) => {
-                    console.error('Erro ao remover tasks:', error);
+                    reactotron.error!!('Erro ao remover tasks:', error);
                     reject(error);
                     return true;
                 }
@@ -102,7 +102,7 @@ const remove = (id: string): Promise<void> => {
     });
 };
 
-const update = (id: string,value: number): Promise<void> => {
+const update = (id: string, value: number): Promise<void> => {
     return new Promise((resolve, reject) => {
         db.transaction((tx) => {
             tx.executeSql(
@@ -114,14 +114,14 @@ const update = (id: string,value: number): Promise<void> => {
                 WHERE 
                     id = ?
             `,
-                [value,id],
+                [value, id],
                 (_, result) => {
-                    console.log('Update feito com sucesso', result);
+                    reactotron.log!!('Update feito com sucesso', result);
                     resolve();
 
                 },
                 (error) => {
-                    console.error('Erro ao fazer update de tasks id :' + id, error);
+                    reactotron.error!!('Erro ao fazer update de tasks id :' + id, error);
                     reject(error);
                     return true;
                 }
@@ -148,7 +148,7 @@ const select = () => {
                         resolve(tasks);
                     },
                     (error) => {
-                        console.error('Erro ao selecionar as tasks:', error);
+                        reactotron.error!!('Erro ao selecionar as tasks:', error);
                         reject(error);
                         return true;
                     }
@@ -174,7 +174,7 @@ const selectChecked = () => {
                         resolve(tasks);
                     },
                     (error) => {
-                        console.error('Erro ao selecionar as tasks:', error);
+                        reactotron.error!!('Erro ao selecionar as tasks:', error);
                         reject(error);
                         return true;
                     }
@@ -200,7 +200,7 @@ const selectTotal = () => {
                         resolve(tasks);
                     },
                     (error) => {
-                        console.error('Erro ao selecionar as tasks:', error);
+                        reactotron.error!!('Erro ao selecionar as tasks:', error);
                         reject(error);
                         return true;
                     }
@@ -218,5 +218,6 @@ export {
     select,
     dropBase,
     selectChecked,
-    selectTotal
+    selectTotal,
+
 }

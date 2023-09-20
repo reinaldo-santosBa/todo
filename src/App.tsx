@@ -3,58 +3,28 @@ import {
   Text,
   View,
   Image,
-  TextInput,
   TouchableOpacity,
   FlatList
 } from 'react-native';
-import IconAntDesign from 'react-native-vector-icons/AntDesign';
 import IconFontAwesome from 'react-native-vector-icons/FontAwesome5';
-import NetInfo from '@react-native-community/netinfo';
-
-import uuid from 'react-native-uuid';
 import { styles } from './styles';
 import Toast from 'react-native-toast-message';
-import * as Tasks from './db/db';
-interface task {
-  id: string;
-  desc: string;
-  checked: number;
-  synchronized: number;
-}
+import * as Tasks from './repositories/task';
+import reactotron from './config/reactotron';
+import { attDataInScreen } from './utils/attDataInScreen';
+import { checkedTask } from './utils/checked';
+import { removeTask } from './utils/remove';
+import { Input } from './components/input';
+import { ButtonAdd } from './components/buttonAdd';
+import { task } from './types/task';
+
+if (__DEV__) reactotron.connect()
 
 const App: React.FC = () => {
   const [checked, setChecked] = useState(0);
   const [created, setCreated] = useState(0);
   const [taskDesc, setTaskDesc] = useState('');
   const [task, setTask] = useState<task[]>([]);
-  const [netChecked, setNetChecked] = useState(false)
-  const attDataInScreen = () => {
-    Tasks.select()
-      .then((result: any) => {
-        return setTask(result);
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-    Tasks.selectChecked()
-      .then((result: any) => {
-        setChecked(result[0].TOTAL);
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-    Tasks.selectTotal()
-      .then((result: any) => {
-        setCreated(result[0].TOTAL);
-      })
-      .catch((error) => {
-        console.error(error)
-      })
-  }
-  const checkInternetConnection = async () => {
-    const state = await NetInfo.fetch();
-    return state.isConnected;
-  };
 
   useEffect(() => {
     (
@@ -62,7 +32,7 @@ const App: React.FC = () => {
         //Tasks.dropBase()
         Tasks.initdatabase()
           .then(() => {
-            attDataInScreen()
+            attDataInScreen(setTask, setChecked, setCreated)
           })
           .catch((error) => {
             console.error(error)
@@ -71,73 +41,22 @@ const App: React.FC = () => {
     )()
   }, [])
 
-  const showToast = () => {
-    Toast.show({
-      type: 'error',
-      position: 'bottom',
-      text1: 'Escreva uma descrição para a task',
-      text2: '',
-      visibilityTime: 4000, // Duração em milissegundos
-      autoHide: true,
-       // Ocultar automaticamente
-    });
-  };
-
-  const addTask = async (taskNew: task) => {
-    if (taskNew.desc === '') {
-      showToast()
-      return
-    }
-    console.log('====================================');
-    console.log(await checkInternetConnection());
-    console.log('====================================');
-    if(await checkInternetConnection()){
-      taskNew.synchronized = 1
-    }
-    Tasks.insert(taskNew)
-    setTaskDesc('')
-    attDataInScreen()
-  }
-  const checkedTask = (id: string, checked: number) => {
-
-    let value;
-    if (checked === 1) {
-      value = 0;
-    } else {
-      value = 1
-    }
-    Tasks.update(id, value)
-    attDataInScreen()
-  }
-  const removeTask = (id: string) => {
-    Tasks.remove(id)
-    attDataInScreen()
-  }
   return (
     <View style={styles.container}>
       <View style={styles.intro}>
         <Image source={require('./assets/Logo.png')} />
         <View style={styles.areaInput}>
-          <TextInput
-            value={taskDesc}
-            onChangeText={setTaskDesc}
-            style={styles.textInput}
-            placeholder='Adicione uma nova tarefa'
-            placeholderTextColor="#808080"
+          <Input
+            taskDesc={taskDesc}
+            setTaskDesc={setTaskDesc}
           />
-          <TouchableOpacity
-            style={styles.btn}
-            onPress={() => {
-              addTask({
-                id: uuid.v4().toString(),
-                desc: taskDesc,
-                checked: 0,
-                synchronized: 0
-              })
-            }}
-          >
-            <IconAntDesign name="pluscircleo" size={16} color="#FFF" />
-          </TouchableOpacity>
+          <ButtonAdd
+            taskDesc={taskDesc}
+            setTaskDesc={setTaskDesc}
+            setTask={setTask}
+            setChecked={setChecked}
+            setCreated={setCreated}
+          />
         </View>
       </View>
       <View style={styles.content}>
@@ -167,14 +86,17 @@ const App: React.FC = () => {
               ItemSeparatorComponent={() => <View style={{ height: 8 }}></View>}
               renderItem={
                 (item) => {
-                  console.log('====================================');
-                  console.log(item.item);
-                  console.log('====================================');
                   return (<View style={styles.cardTask}>
                     <TouchableOpacity
                       onPress={
                         () => {
-                          checkedTask(item.item.id, item.item.checked)
+                          checkedTask(
+                            item.item.id,
+                            item.item.checked,
+                            setTask,
+                            setChecked,
+                            setCreated
+                          )
                         }
                       }
                       style={
@@ -194,7 +116,14 @@ const App: React.FC = () => {
                       {item.item.desc} - {item.item.synchronized}
                     </Text>
                     <TouchableOpacity
-                      onPress={() => removeTask(item.item.id)}
+                      onPress={() => {
+                        removeTask(
+                          item.item.id,
+                          setTask,
+                          setChecked,
+                          setCreated
+                        )
+                      }}
                     >
                       <IconFontAwesome
                         name="trash-alt"
